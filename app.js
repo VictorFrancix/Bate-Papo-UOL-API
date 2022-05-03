@@ -47,13 +47,13 @@ app.post("/participants", async (req, res) => {
         return;
     }
 
-    participante = {
+    user = {
         name,
         lastStatus: Date.now(),
     };
 
     try {
-        await db.collection("participants").insertOne(participante);
+        await db.collection("participants").insertOne(user);
 
         const sms = {
             from: name,
@@ -79,6 +79,19 @@ app.get("/participants", async (req, res) => {
     }
 });
 
+app.post("/status", async (req, res) => {
+    const name = req.headers.user;
+    let user = await db.collection("participants").findOne({ name: name });
+    if (!user) {
+        res.sendStatus(404);
+    }
+    try {
+        const updateTime= await list.collection("users").updateOne({name:user},{$set:{lastStatus: Date.now()}})
+    res.send(200)
+    } catch (err) {
+        res.sendStatus(500);
+    }
+});
 
 app.listen(5000, () =>
     console.log(chalk.blue("Server listening on port 5000")));
