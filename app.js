@@ -47,13 +47,13 @@ app.post("/participants", async (req, res) => {
         return;
     }
 
-    participant = {
+    participante = {
         name,
         lastStatus: Date.now(),
     };
 
     try {
-        await db.collection("participants").insertOne(participant);
+        await db.collection("participants").insertOne(participante);
 
         const sms = {
             from: name,
@@ -67,7 +67,14 @@ app.post("/participants", async (req, res) => {
 
         res.sendStatus(201);
     } catch (err) {
-        console.log(err);
+        res.sendStatus(500);
+    }
+});
+app.get("/participants", async (req, res) => {
+    try {
+        const participants = await db.collection("participants").find().toArray();
+        res.send(participants);
+    } catch (err) {
         res.sendStatus(500);
     }
 });
