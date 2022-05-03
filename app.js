@@ -93,23 +93,56 @@ app.post("/status", async (req, res) => {
     }
 });
 
-app.get("/messages", async (req, res) => {
+app.get("/msgs", async (req, res) => {
     const limite = req.query.limit;
     const user = req.headers.user;
 
     try {
-        let sms = await db.collection("messages").find({$or: [{ type: "message" },
+        let sms = await db.collection("msgs").find({$or: [{ type: "message" },
                 { to: "Todos" },
                 { to: user },
                 { from: user },
                 ],
             }).toArray();
-        if (limite && limite <= messages.length) {
-            messages = messages.slice(limite * -1);
+        if (limite && limite <= msgs.length) {
+            msgs = msgs.slice(limite * -1);
         }
 
-        res.send(messages);
+        res.send(msgs);
     } catch (err) {
+        res.sendStatus(500);
+    }
+});
+
+app.post("/mensagens", async (req, res) => {
+
+    const user = await db
+        .collection("participants")
+        .findOne({ name: req.headers.user });
+
+    if (!user || msgSchema.validate(req.body).error) {
+        console.log(msgSchema.validate(req.body).error.details.map((detail) => detail.message));
+        res.sendStatus(422);
+
+        return;
+    }
+    const { to, text, type } = req.body;
+    const from = req.headers.user;
+
+    let msg = {
+        to: stripHtml(to).result,
+        from: stripHtml(from).result,
+        text: stripHtml(text).result,
+        type: stripHtml(type).result,
+        time: dayjs().format("HH:mm:ss"),
+    };
+
+    try {
+        await db.collection("msgs").insertOne(msg);
+
+        res.sendStatus(201);
+    } catch (e) {
+        console.log(e);
         res.sendStatus(500);
     }
 });
