@@ -93,5 +93,26 @@ app.post("/status", async (req, res) => {
     }
 });
 
+app.get("/messages", async (req, res) => {
+    const limite = req.query.limit;
+    const user = req.headers.user;
+
+    try {
+        let sms = await db.collection("messages").find({$or: [{ type: "message" },
+                { to: "Todos" },
+                { to: user },
+                { from: user },
+                ],
+            }).toArray();
+        if (limite && limite <= messages.length) {
+            messages = messages.slice(limite * -1);
+        }
+
+        res.send(messages);
+    } catch (err) {
+        res.sendStatus(500);
+    }
+});
+
 app.listen(5000, () =>
     console.log(chalk.blue("Server listening on port 5000")));
