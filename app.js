@@ -20,10 +20,58 @@ mongoClient.connect(() => {
 });
 
 const msgSchema = joi.object({
-    to: joi.string().required().trim(),
-    text: joi.string().required().trim(),
+    to: joi.string().required(),
+    text: joi.string().required(),
     type: joi.any().valid('message', 'private_message').required(),});
 
-const userSchema = joi.object({name: joi.string().required().trim(),
+const userSchema = joi.object({name: joi.string().required(),
 });
 
+app.post("/participants", async (req, res) => {
+    
+
+    if (participantSchema.validate(req.body).error) {
+        console.log(participantSchema.validate(req.body).error.details);
+        res.sendStatus(422);
+        return;
+    }
+    let { name } = req.body;
+
+    name = stripHtml(name).result;
+
+    await mongoClient.connect();
+
+    let user = await db.collection("users").findOne({ name: name });
+    if (user) {
+        res.sendStatus(409);
+        return;
+    }
+
+    participant = {
+        name,
+        lastStatus: Date.now(),
+    };
+
+    try {
+        await db.collection("participants").insertOne(participant);
+
+        const sms = {
+            from: name,
+            to: "Todos",
+            text: "entra na sala...",
+            type: "status",
+            time: dayjs().format("HH:mm:ss"),
+        };
+
+        await db.collection("mensagens").insertOne(sms);
+
+        res.sendStatus(201);
+    } catch (err) {
+        console.log(err);
+        res.sendStatus(500);
+    }
+});
+
+
+app.listen(5000, () =>
+    console.log(chalk.blue("Server listening on port 5000")));
